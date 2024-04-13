@@ -1,6 +1,5 @@
 /*
 Copyright © 2024 Boncen <boncen@outlook.com>
-This file is part of CLI application foo.
 */
 package cmd
 
@@ -18,6 +17,8 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type TypeProperties struct {
@@ -28,10 +29,23 @@ type TypeItem struct {
 	Props []TypeProperties
 	Name  string
 }
+type PathItem struct {
+	Name           string
+	ParamsTypeName string
+	MethodName     string
+	ApiUrl         string
+	Summary        string
+	ReturnTypeName string
+}
 
 type ViewModel struct {
 	TypeList    []TypeItem
 	EnumImports []string
+}
+
+type ApiViewModel struct {
+	TypesImports []string
+	PathList     []PathItem
 }
 
 var dir string = "../out" // 生成目录
@@ -62,10 +76,22 @@ var swaggerCmd = &cobra.Command{
 			return err
 		}
 		fmt.Printf("%v", root)
+		// Determine if the folder exists
+		err = helper.CreateDirIfNotExists(dir, 0777)
+		if err != nil {
+			return err
+		}
+
 		err = genTypes(root)
 		if err != nil {
 			return err
 		}
+		go func() {
+			err := genPaths(root)
+			if err != nil {
+				fmt.Printf("genPath err: %#v", err)
+			}
+		}()
 		return nil
 	},
 }
@@ -87,14 +113,8 @@ func genTypes(root *root) error {
 		return nil
 	}
 
-	// Determine if the folder exists
-	err := helper.CreateDirIfNotExists(dir, 0777)
-	if err != nil {
-		return err
-	}
-
 	// create file type.ts
-	err = initFile(path.Join(dir, "types.ts"))
+	err := initFile(path.Join(dir, "types.ts"))
 	if err != nil {
 		return err
 	}
@@ -192,10 +212,72 @@ func genTypes(root *root) error {
 	return nil
 }
 
-//	type EnumTemplateIntModel struct {
-//		Name string
-//		Enum []int16
-//	}
+func genPaths(root *root) error {
+	// create file type.ts
+	err := initFile(path.Join(dir, "api.ts"))
+	if err != nil {
+		return err
+	}
+	fileHandler, err := os.OpenFile(path.Join(dir, "api.ts"), os.O_RDWR, 0777)
+	if err != nil {
+		return err
+	}
+	defer fileHandler.Close()
+
+	t, err := template.ParseFiles("../template/pathTemplate")
+	// 使用模板生成内容
+	if err != nil {
+		fmt.Printf("err: %v", err)
+		return err
+	}
+	pathItems := make([]PathItem, 0)
+	pathImports := make([]string, 0)
+
+	for url, m := range root.Paths {
+		if url == "/api/mall/productCooperative/createPickup" {
+			a := 1
+			a += 1
+		}
+		for method, methodDetail := range m {
+			p := PathItem{ApiUrl: url, MethodName: method, Summary: methodDetail.Summary}
+			// name
+			urlPieces := strings.Split(url, "/")
+			caser := cases.Title(language.English)
+			for i := 0; i < len(urlPieces); i++ {
+				urlPieces[i] = caser.String(urlPieces[i])
+			}
+			p.Name = strings.Join(urlPieces, "")
+
+			// paramsName
+			reqRef := methodDetail.RequestBody.Content.ApplicationJson.Schema.Ref
+			rspRef := methodDetail.Responses.Status200.Content.ApplicationJson.Schema.Ref
+
+			p.ReturnTypeName = handleNestKeyName(rspRef)
+			p.ParamsTypeName = handleNestKeyName(reqRef)
+
+			if p.ParamsTypeName == "" {
+				p.ParamsTypeName = "any"
+			} else {
+				if !helper.IsContain(pathImports, p.ParamsTypeName) {
+					pathImports = append(pathImports, p.ParamsTypeName)
+				}
+			}
+			if p.ReturnTypeName == "" {
+				p.ReturnTypeName = "any"
+			} else {
+				if !helper.IsContain(pathImports, p.ReturnTypeName) {
+					pathImports = append(pathImports, p.ReturnTypeName)
+				}
+			}
+			pathItems = append(pathItems, p)
+		}
+	}
+
+	viewModel := ApiViewModel{PathList: pathItems, TypesImports: pathImports}
+	err = t.Execute(fileHandler, viewModel)
+	return err
+}
+
 type EnumTemplateModel struct {
 	Name string
 	Enum []any

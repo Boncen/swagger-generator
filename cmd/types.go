@@ -6,30 +6,36 @@ import (
 )
 
 type root struct {
-	Openapi    string                `json:"openapi"`
-	Info       openapiInfo           `json:"info"`
-	Components component             `json:"components"`
-	Paths      map[string]pathDetail `json:"paths"`
-}
-type pathDetail struct {
-	Post    pathMethodDetail `json:"post"`
-	Get     pathMethodDetail `json:"get"`
-	Put     pathMethodDetail `json:"put"`
-	Patch   pathMethodDetail `json:"patch"`
-	Delete  pathMethodDetail `json:"delete"`
-	Head    pathMethodDetail `json:"head"`
-	Trace   pathMethodDetail `json:"trace"`
-	Connect pathMethodDetail `json:"connect"`
-	Options pathMethodDetail `json:"options"`
+	Openapi    string                                 `json:"openapi"`
+	Info       openapiInfo                            `json:"info"`
+	Components component                              `json:"components"`
+	Paths      map[string]map[string]pathMethodDetail `json:"paths"`
 }
 
+// type pathDetail struct {
+// 	Post    pathMethodDetail `json:"post"`
+// 	Get     pathMethodDetail `json:"get"`
+// 	Put     pathMethodDetail `json:"put"`
+// 	Patch   pathMethodDetail `json:"patch"`
+// 	Delete  pathMethodDetail `json:"delete"`
+// 	Head    pathMethodDetail `json:"head"`
+// 	Trace   pathMethodDetail `json:"trace"`
+// 	Connect pathMethodDetail `json:"connect"`
+// 	Options pathMethodDetail `json:"options"`
+// }
+
 type pathMethodDetail struct {
-	Tags      []string                 `json:"tags"`
-	Summary   string                   `json:"summary"`
-	Responses pathMethodResponseDetail `json:"responses"`
+	Tags        []string                 `json:"tags"`
+	Summary     string                   `json:"summary"`
+	Responses   pathMethodResponseDetail `json:"responses"`
+	RequestBody pathMethodRequestBody    `json:"requestBody"`
 }
 type pathMethodResponseDetail struct {
 	Status200 pathMethodResonse200 `json:"200"`
+}
+type pathMethodRequestBody struct {
+	Description string                      `json:"description"`
+	Content     pathMethodResonse200Content `json:"content"`
 }
 
 type pathMethodResonse200 struct {
@@ -174,6 +180,9 @@ func handleKeyName(name string) string {
 
 // 处理嵌套类型key名
 func handleNestKeyName(name string) string {
+	if !strings.Contains(name, "`") {
+		return handleKeyName(name)
+	}
 	result := name
 	result = strings.ReplaceAll(result, "`", "$")
 	result = strings.ReplaceAll(result, "[", "_")

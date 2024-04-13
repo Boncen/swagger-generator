@@ -38,7 +38,12 @@ func TestSwaggerParse(t *testing.T) {
 		t.FailNow()
 		panic(err)
 	}
-	err = genTypes(root)
+	// err = genTypes(root)
+	// if err != nil {
+	// 	t.FailNow()
+	// 	fmt.Printf("%v", err)
+	// }
+	err = genPaths(root)
 	if err != nil {
 		t.FailNow()
 		fmt.Printf("%v", err)

@@ -1,0 +1,8 @@
+{{ if len .TypesImports }}
+import { {{ range $key,$val := .TypesImports  }} {{$val}}, {{end}} } from './types'
+{{ end }}
+
+{{- range $key,$val := .PathList -}}
+/** {{ $val.Summary }} */
+export const {{ $val.Name }} = (data: {{ $val.ParamsTypeName }}):{{ $val.ReturnTypeName }} => http.{{$val.MethodName}}('{{$val.ApiUrl}}', data);
+{{end}}
