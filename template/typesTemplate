@@ -1,0 +1,11 @@
+{{ if len .EnumImports }}
+import { {{ range $key,$val := .EnumImports  }} {{$val}}, {{end}} } from './enum'
+{{ end }}
+
+{{- range $key,$val := .TypeList -}}
+export interface {{$val.Name}} {
+	{{ range $p := $val.Props -}}
+	{{$p.FieldName}}: {{$p.FieldType}} 
+	{{ end -}}
+}
+{{end}}

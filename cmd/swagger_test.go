@@ -13,7 +13,7 @@ func TestSwaggerParse(t *testing.T) {
 	file, err := os.OpenFile("../testdata/swagger.json", os.O_RDONLY, 0644)
 	if err != nil {
 		fmt.Printf("error:%v", err)
-		t.Fail()
+		t.FailNow()
 	}
 	defer file.Close()
 	var bufAll bytes.Buffer
@@ -22,26 +22,26 @@ func TestSwaggerParse(t *testing.T) {
 		buffer = make([]byte, 2048)
 		n, err := file.Read(buffer)
 		bufAll.Write(buffer)
-
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			t.FailNow()
 			panic(err)
 		}
 		if n == 0 {
 			break
 		}
-
 	}
-	fmt.Printf("bufAll length:%d \n", bufAll.Len())
 	root, err := parseApiJson(bytes.Trim(bufAll.Bytes(), "\x00"))
 	if err != nil {
+		t.FailNow()
 		panic(err)
 	}
-	fmt.Printf("root: %v", &root)
-	if &root.Components.Schemas == nil {
+	err = genTypes(root)
+	if err != nil {
 		t.FailNow()
+		fmt.Printf("%v", err)
 	}
 }
 
