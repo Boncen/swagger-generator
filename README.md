@@ -1,16 +1,7 @@
-## openapi doc
-
-generate docs
+## openapi swagger
 
 ```
-openapi doc [flags]
-```
-
-### Options
-
-```
-  -d, --dir string   Destination directory for docs
-  -h, --help         help for doc
+openapi swagger --url <your_swagger_json_url>
 ```
 
 ### SEE ALSO
