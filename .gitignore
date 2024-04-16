@@ -1,0 +1,5 @@
+testdata/
+out/
+
+*.exe
+openapi
