@@ -9,6 +9,18 @@ import (
 	"testing"
 )
 
+func TestFetchJson(t *testing.T) {
+	jsonContent, err := getUrlContent("http://192.168.1.196:19003/swagger/v1/swagger.json")
+	if err != nil {
+		t.FailNow()
+	}
+	root, err := parseApiJson(jsonContent)
+	if err != nil {
+		t.FailNow()
+	}
+	fmt.Printf("%v", root)
+}
+
 func TestSwaggerParse(t *testing.T) {
 	file, err := os.OpenFile("../testdata/swagger.json", os.O_RDONLY, 0644)
 	if err != nil {
@@ -21,7 +33,13 @@ func TestSwaggerParse(t *testing.T) {
 	for {
 		buffer = make([]byte, 2048)
 		n, err := file.Read(buffer)
-		bufAll.Write(buffer)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.FailNow()
+		}
+		n, err = bufAll.Write(buffer)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -38,12 +56,12 @@ func TestSwaggerParse(t *testing.T) {
 		t.FailNow()
 		panic(err)
 	}
-	// err = genTypes(root)
-	// if err != nil {
-	// 	t.FailNow()
-	// 	fmt.Printf("%v", err)
-	// }
-	err = genPaths(root)
+	nameMap, err := genPaths(root)
+	if err != nil {
+		t.FailNow()
+		fmt.Printf("%v", err)
+	}
+	err = genTypes(root, nameMap)
 	if err != nil {
 		t.FailNow()
 		fmt.Printf("%v", err)

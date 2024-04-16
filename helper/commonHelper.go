@@ -8,3 +8,13 @@ func IsContain[T comparable](items []T, item T) bool {
 	}
 	return false
 }
+
+func IsMapContainValue[T comparable, K comparable](m map[K]T, targetValue T) (bool, K) {
+	var k K
+	for key, value := range m {
+		if value == targetValue {
+			return true, key
+		}
+	}
+	return false, k
+}
