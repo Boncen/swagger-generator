@@ -26,7 +26,7 @@ var docCmd = &cobra.Command{
 		if err = doc.GenMarkdownTree(cmd, dir); err != nil {
 			return err
 		}
-		fmt.Println("Markdown doc successfully created! \n")
+		fmt.Println("Markdown doc successfully created!")
 		return nil
 	},
 }

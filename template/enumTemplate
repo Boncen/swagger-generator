@@ -1,6 +1,7 @@
+{{ if len .Desc }}/** {{ .Desc }} */{{ end }}
 export enum {{.Name}} {
-	{{ range $val := .Enum }}
-	"{{$val}}" = {{$val}}
+	{{ range $val := .Enum -}}
+	Field{{$val}} = {{$val}},
 	{{ end }}
 }
 

@@ -12,18 +12,6 @@ type root struct {
 	Paths      map[string]map[string]pathMethodDetail `json:"paths"`
 }
 
-// type pathDetail struct {
-// 	Post    pathMethodDetail `json:"post"`
-// 	Get     pathMethodDetail `json:"get"`
-// 	Put     pathMethodDetail `json:"put"`
-// 	Patch   pathMethodDetail `json:"patch"`
-// 	Delete  pathMethodDetail `json:"delete"`
-// 	Head    pathMethodDetail `json:"head"`
-// 	Trace   pathMethodDetail `json:"trace"`
-// 	Connect pathMethodDetail `json:"connect"`
-// 	Options pathMethodDetail `json:"options"`
-// }
-
 type pathMethodDetail struct {
 	Tags        []string                 `json:"tags"`
 	Summary     string                   `json:"summary"`
@@ -64,16 +52,13 @@ type component struct {
 	Schemas map[string]componentSchemaDetail `json:"schemas"`
 }
 
-// type componentSchema struct {
-// 	schemas map[string]componentSchemaDetail
-// }
-
 type componentSchemaDetail struct {
 	TypeField            string                      `json:"type"`
 	Properties           map[string]propertiesDetail `json:"properties"`
 	AdditionalProperties bool                        `json:"additionalProperties"`
 	Required             []string                    `json:"required"`
 	Enum                 []any                       `json:"enum"`
+	Description          string                      `json:"description"`
 }
 
 type propertiesDetailItems struct {
@@ -130,12 +115,12 @@ func (p *propertiesDetail) TypeStringWithRef(ref string) string {
 	return result
 }
 
-type jwtSecuritySchemes struct {
-	TypeField    string `json:"type"`
-	Description  string `json:"description"`
-	Scheme       string `json:"schema"`
-	BearerFormat string `json:"bearerFormat"`
-}
+// type jwtSecuritySchemes struct {
+// 	TypeField    string `json:"type"`
+// 	Description  string `json:"description"`
+// 	Scheme       string `json:"schema"`
+// 	BearerFormat string `json:"bearerFormat"`
+// }
 
 func getTypeString(oldType string) string {
 	result := "any"

@@ -33,7 +33,7 @@ func TestSwaggerParse(t *testing.T) {
 	for {
 		buffer = make([]byte, 2048)
 		n, err := file.Read(buffer)
-		if err != nil {
+		if n == 0 && err != nil {
 			if err == io.EOF {
 				break
 			}

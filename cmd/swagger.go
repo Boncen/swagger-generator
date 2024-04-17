@@ -15,6 +15,7 @@ import (
 	"path"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
@@ -24,10 +25,12 @@ import (
 type TypeProperties struct {
 	FieldName string
 	FieldType string
+	Desc      string
 }
 type TypeItem struct {
 	Props []TypeProperties
 	Name  string
+	Desc  string
 }
 type PathItem struct {
 	Name           string
@@ -50,18 +53,11 @@ type ApiViewModel struct {
 
 var dir string = "./out" // 生成目录
 
-// swaggerCmd represents the swagger command
 var swaggerCmd = &cobra.Command{
-	Use: "swagger",
-	// Args:  cobra.ExactArgs(1),
+	Use:   "swagger",
 	Short: "Generate code from swagger api doc.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		// dir, err = cmd.Flags().GetString("dir") //
-		// if err != nil {
-		// 	return err
-		// }
-
 		jsonUrl, err := cmd.Flags().GetString("url")
 		if err != nil {
 			return err
@@ -75,8 +71,9 @@ var swaggerCmd = &cobra.Command{
 			log.Fatal("error occure", err)
 			return err
 		}
-		// fmt.Printf("%v", root)
-		// Determine if the folder exists
+		fmt.Printf("Openapi:%v \n", root.Openapi)
+		fmt.Printf("Project:%v - v%v \n", root.Info.Title, root.Info.Version)
+		begin := time.Now()
 		err = helper.CreateDirIfNotExists(dir, 0777)
 		if err != nil {
 			return err
@@ -90,7 +87,8 @@ var swaggerCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println("done!")
+		duration := time.Since(begin)
+		fmt.Printf("done! -> %v milliseconds \n", duration.Milliseconds())
 		return nil
 	},
 }
@@ -157,7 +155,7 @@ func genTypes(root *root, nameMap *map[string]string) error {
 
 				refTypeNameList = append(refTypeNameList, fileTypeName)
 
-				props = append(props, TypeProperties{FieldName: propertiesKey, FieldType: fileTypeName})
+				props = append(props, TypeProperties{FieldName: propertiesKey, FieldType: fileTypeName, Desc: valP.Description})
 			}
 		}
 		// 枚举
@@ -170,7 +168,7 @@ func genTypes(root *root, nameMap *map[string]string) error {
 			}
 			continue
 		}
-		typesList = append(typesList, TypeItem{Name: key, Props: props})
+		typesList = append(typesList, TypeItem{Name: key, Props: props, Desc: val.Description})
 	}
 
 	// 处理嵌套类型
@@ -289,11 +287,12 @@ func genPaths(root *root) (*map[string]string, error) {
 type EnumTemplateModel struct {
 	Name string
 	Enum []any
+	Desc string
 }
 
 // 处理枚举类型并写入文件
 func handleEnum(name string, detail componentSchemaDetail) error {
-	err := helper.CreateIfNotExists(path.Join(dir, "enum.ts"))
+	err := initFile(path.Join(dir, "enum.ts"))
 	if err != nil {
 		return err
 	}
@@ -306,7 +305,7 @@ func handleEnum(name string, detail componentSchemaDetail) error {
 	if err != nil {
 		return err
 	}
-	err = t.Execute(file, EnumTemplateModel{Name: name, Enum: detail.Enum})
+	err = t.Execute(file, EnumTemplateModel{Name: name, Enum: detail.Enum, Desc: detail.Description})
 	file.Close()
 	return err
 }
