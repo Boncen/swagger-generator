@@ -3,6 +3,7 @@
 ```
 openapi swagger --url <your_swagger_json_url>
 ```
+> 需要template文件夹和执行文件在同一目录下
 
 ### SEE ALSO
 
