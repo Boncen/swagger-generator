@@ -11,7 +11,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Version: "0.0.1",
+	Version: "1.0.1",
 	Use:     "openapi",
 	Short:   "Generate ts code from swagger doc url",
 	// Run: func(cmd *cobra.Command, args []string) { },
