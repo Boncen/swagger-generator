@@ -13,11 +13,24 @@ type root struct {
 }
 
 type pathMethodDetail struct {
-	Tags        []string                 `json:"tags"`
-	Summary     string                   `json:"summary"`
-	Responses   pathMethodResponseDetail `json:"responses"`
-	RequestBody pathMethodRequestBody    `json:"requestBody"`
+	Tags        []string                     `json:"tags"`
+	Summary     string                       `json:"summary"`
+	Responses   pathMethodResponseDetail     `json:"responses"`
+	RequestBody pathMethodRequestBody        `json:"requestBody"`
+	Parameters  []pathMethodRequestParameter `json:"parameters"`
 }
+type pathMethodRequestParameter struct {
+	Name        string                           `json:"name"`
+	In          string                           `json:"in"`
+	Description string                           `json:"description"`
+	Required    bool                             `json:"required"`
+	Schema      pathMethodRequestParameterSchema `json:"schema"`
+}
+type pathMethodRequestParameterSchema struct {
+	TypeField string `json:"type"`
+	Format    string `json:"format"`
+}
+
 type pathMethodResponseDetail struct {
 	Status200 pathMethodResonse200 `json:"200"`
 }
@@ -53,12 +66,12 @@ type component struct {
 }
 
 type componentSchemaDetail struct {
-	TypeField            string                      `json:"type"`
-	Properties           map[string]propertiesDetail `json:"properties"`
-	AdditionalProperties bool                        `json:"additionalProperties"`
-	Required             []string                    `json:"required"`
-	Enum                 []any                       `json:"enum"`
-	Description          string                      `json:"description"`
+	TypeField  string                      `json:"type"`
+	Properties map[string]propertiesDetail `json:"properties"`
+	// AdditionalProperties bool                       `json:"additionalProperties"`
+	Required    []string `json:"required"`
+	Enum        []any    `json:"enum"`
+	Description string   `json:"description"`
 }
 
 type propertiesDetailItems struct {
@@ -158,6 +171,7 @@ func handleKeyName(name string) string {
 	result := ""
 	// 处理key,去除. 去除加号
 	result = strings.ReplaceAll(name, ".", "")
+	result = strings.ReplaceAll(result, "-", "")
 	result = strings.ReplaceAll(result, "+", "")
 	result = strings.ReplaceAll(result, "#/components/schemas/", "")
 	return result

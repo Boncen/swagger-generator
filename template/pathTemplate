@@ -1,9 +1,0 @@
-import http from './http'
-{{ if len .TypesImports }}
-import { {{ range $key,$val := .TypesImports  }} {{$val}}, {{end}} } from './types'
-{{ end }}
-
-{{- range $key,$val := .PathList -}}
-/** {{ $val.Summary }} */
-export const {{ $val.Name }} = ({{ if len $val.ParamsTypeName }} data: {{ $val.ParamsTypeName }} {{ end }}) {{ if len $val.ReturnTypeName }}:{{ $val.ReturnTypeName }} {{ end }} => http.{{$val.MethodName}}('{{$val.ApiUrl}}' {{ if len $val.ParamsTypeName }}, data{{ end }});
-{{end}}

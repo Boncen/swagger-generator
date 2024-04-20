@@ -22,6 +22,44 @@ import (
 	"golang.org/x/text/language"
 )
 
+const enumTemplate = `
+{{ if len .Desc }}/** {{ .Desc }} */{{ end }}
+export enum {{.Name}} {
+	{{ range $val := .Enum -}}
+	Field{{$val}} = {{$val}},
+	{{ end }}
+}
+
+`
+const pathTemplate = `
+import http from './http'
+{{ if len .TypesImports }}
+import { {{ range $key,$val := .TypesImports  }} {{$val}}, {{end}} } from './types'
+{{ end }}
+
+{{- range $key,$val := .PathList -}}
+/** {{ $val.Summary }} */
+export const {{ $val.Name }} = ({{ if len $val.ParamsTypeName }} data: {{ $val.ParamsTypeName }} {{ end }} {{ if len $val.ParamsTypeName}}{{if len $val.Params}} ,{{end}}{{end}} {{$val.Params}}) {{ if len $val.ReturnTypeName }}:{{ $val.ReturnTypeName }} {{ end }} => http.{{$val.MethodName}}(` + "`{{$val.ApiUrl}}`" + ` {{ if len $val.ParamsTypeName }}, data{{ end }});
+{{end}}
+
+`
+
+const typesTemplate = `
+{{ if len .EnumImports }}
+import { {{ range $key,$val := .EnumImports  }} {{$val}}, {{end}} } from './enum'
+{{ end }}
+
+{{- range $key,$val := .TypeList -}}
+{{ if len $val.Desc }}/** {{ $val.Desc }} */{{ end }}
+export interface {{$val.Name}} {
+	{{ range $p := $val.Props -}}
+	{{ if len $p.Desc }}/** {{ $p.Desc }} */{{ end }}
+	{{$p.FieldName}}: {{$p.FieldType}} 
+	{{ end -}}
+}
+{{end}}
+`
+
 type TypeProperties struct {
 	FieldName string
 	FieldType string
@@ -39,6 +77,12 @@ type PathItem struct {
 	ApiUrl         string
 	Summary        string
 	ReturnTypeName string
+	// Params         []PathParameterItem
+	Params string
+}
+type PathParameterItem struct {
+	Name     string
+	TypeName string
 }
 
 type ViewModel struct {
@@ -96,6 +140,7 @@ var swaggerCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(swaggerCmd)
 	swaggerCmd.Flags().StringP("url", "u", "", "The swagger api doc json url.")
+
 }
 
 /** 生成类型 */
@@ -115,13 +160,19 @@ func genTypes(root *root, nameMap *map[string]string) error {
 	if err != nil {
 		return err
 	}
+	err = initFile(path.Join(dir, "enum.ts"))
+	if err != nil {
+		return err
+	}
 	fileHandler, err := os.OpenFile(path.Join(dir, "types.ts"), os.O_RDWR, 0777)
 	if err != nil {
 		return err
 	}
 	pendingObj := make(map[string]componentSchemaDetail) // 带有引用类型的类型稍后处理
 
-	t, err := template.ParseFiles("./template/typesTemplate")
+	t := template.New("types")
+	t, err = t.Parse(typesTemplate)
+
 	// 使用模板生成内容
 	if err != nil {
 		fmt.Printf("err: %v", err)
@@ -228,7 +279,8 @@ func genPaths(root *root) (*map[string]string, error) {
 	}
 	defer fileHandler.Close()
 
-	t, err := template.ParseFiles("./template/pathTemplate")
+	t := template.New("path")
+	t, err = t.Parse(pathTemplate)
 	// 使用模板生成内容
 	if err != nil {
 		fmt.Printf("err: %v", err)
@@ -240,7 +292,29 @@ func genPaths(root *root) (*map[string]string, error) {
 
 	for url, m := range root.Paths {
 		for method, methodDetail := range m {
+			// params := make([]PathParameterItem, 0)
 			p := PathItem{ApiUrl: url, MethodName: method, Summary: methodDetail.Summary}
+
+			queryStrings := make([]string, 0)
+			paramsStrings := make([]string, 0)
+			if methodDetail.Parameters != nil {
+				for _, parameter := range methodDetail.Parameters {
+					if parameter.In == "query" {
+						queryStrings = append(queryStrings, parameter.Name+"="+"${"+parameter.Name+"}")
+					}
+					parameterName := parameter.Name
+					if !parameter.Required {
+						parameterName = parameter.Name + "?"
+					}
+					paramsStrings = append(paramsStrings, parameterName+": "+getTypeString(parameter.Schema.TypeField))
+				}
+				p.ApiUrl = strings.ReplaceAll(p.ApiUrl, "{", "${")
+				p.Params = strings.Join(paramsStrings, ",")
+				if len(queryStrings) > 0 {
+					p.ApiUrl = p.ApiUrl + "?" + strings.Join(queryStrings, "&")
+				}
+			}
+
 			// name
 			urlPieces := strings.Split(url, "/")
 			caser := cases.Title(language.English)
@@ -248,6 +322,16 @@ func genPaths(root *root) (*map[string]string, error) {
 				urlPieces[i] = caser.String(urlPieces[i])
 			}
 			p.Name = strings.Join(urlPieces, "")
+			p.Name = handleKeyName(p.Name)
+			p.Name = strings.ReplaceAll(p.Name, "}", "")
+			p.Name = strings.ReplaceAll(p.Name, "{", "With")
+
+			// 检查重复
+			for _, item := range pathItems {
+				if item.Name == p.Name {
+					p.Name = p.Name + caser.String(p.MethodName)
+				}
+			}
 
 			// paramsName
 			reqRef := methodDetail.RequestBody.Content.ApplicationJson.Schema.Ref
@@ -292,12 +376,10 @@ type EnumTemplateModel struct {
 
 // 处理枚举类型并写入文件
 func handleEnum(name string, detail componentSchemaDetail) error {
-	err := initFile(path.Join(dir, "enum.ts"))
-	if err != nil {
-		return err
-	}
+	var err error
 
-	t, err := template.ParseFiles("./template/enumTemplate")
+	t := template.New("enum")
+	t, err = t.Parse(enumTemplate)
 	if err != nil {
 		return err
 	}

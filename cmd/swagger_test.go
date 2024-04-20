@@ -22,7 +22,7 @@ func TestFetchJson(t *testing.T) {
 }
 
 func TestSwaggerParse(t *testing.T) {
-	file, err := os.OpenFile("../testdata/swagger.json", os.O_RDONLY, 0644)
+	file, err := os.OpenFile("../testdata/swagger2.json", os.O_RDONLY, 0644)
 	if err != nil {
 		fmt.Printf("error:%v", err)
 		t.FailNow()
